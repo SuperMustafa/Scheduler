@@ -168,3 +168,10 @@ E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Logging.EventSource.d
 E:\asp.net\Palm\Palm\bin\Debug\net8.0\System.Diagnostics.EventLog.dll
 E:\asp.net\Palm\Palm\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Diagnostics.EventLog.dll
 E:\asp.net\Palm\Palm\bin\Debug\net8.0\Newtonsoft.Json.dll
+E:\asp.net\Palm\Palm\obj\Debug\net8.0\Palm.sourcelink.json
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Configuration.dll
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Configuration.Abstractions.dll
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Http.dll
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
+E:\asp.net\Palm\Palm\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll

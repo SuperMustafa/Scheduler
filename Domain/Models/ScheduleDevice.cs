@@ -9,6 +9,7 @@ namespace Domain.Models
     public class ScheduleDevice
     {
         public int Id { get; set; }
+       public string AccessToken { get; set; }
 
         public int ScheduleId { get; set; }
         public Schedule Schedule { get; set; }

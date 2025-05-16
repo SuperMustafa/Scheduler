@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Palm")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6f8e7ed5b2d35acc534282891d2be0ca00e886cb")]
 [assembly: System.Reflection.AssemblyProductAttribute("Palm")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Palm")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

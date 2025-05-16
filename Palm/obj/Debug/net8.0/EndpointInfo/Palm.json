@@ -464,6 +464,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "accessToken": {
+            "type": "string",
+            "nullable": true
+          },
           "scheduleId": {
             "type": "integer",
             "format": "int32"

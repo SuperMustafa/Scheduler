@@ -15,3 +15,4 @@ E:\asp.net\Palm\Services\obj\Debug\net8.0\Services.dll
 E:\asp.net\Palm\Services\obj\Debug\net8.0\refint\Services.dll
 E:\asp.net\Palm\Services\obj\Debug\net8.0\Services.pdb
 E:\asp.net\Palm\Services\obj\Debug\net8.0\ref\Services.dll
+E:\asp.net\Palm\Services\obj\Debug\net8.0\Services.sourcelink.json

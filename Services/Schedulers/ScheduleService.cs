@@ -79,7 +79,7 @@ namespace Services.Schedulers
             if (schedule == null) return false;
 
             schedule.ScheduleName = dto.Name;
-            schedule.StartTime = TimeSpan.Parse(dto.StartTime);
+            schedule.StartTime = TimeSpan.Parse( dto.StartTime);
             schedule.EndTime = TimeSpan.Parse(dto.EndTime);
             schedule.SelectedDays = dto.SelectedDays;
             schedule.IsActive = dto.IsActive;

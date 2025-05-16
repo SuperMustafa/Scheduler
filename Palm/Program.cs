@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Persistance.Data;
 using Persistance.Repositories;
-using Services.Background;
 using Services.Buildings;
 using Services.Schedulers;
 
@@ -26,6 +25,7 @@ namespace Palm
             builder.Services.AddScoped<IBuildingRepository, BuildingRepository>();
             builder.Services.AddScoped<IBuildingService,BuildingService>();
             builder.Services.AddHostedService<ScheduleExecutorService>();
+            builder.Services.AddHttpClient();
 
             builder.Services.AddDbContext<SchedulerDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

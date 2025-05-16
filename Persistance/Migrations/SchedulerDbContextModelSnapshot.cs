@@ -154,7 +154,7 @@ namespace Persistance.Migrations
                         {
                             Id = 1,
                             BuildingId = 1,
-                            CreatedAt = new DateTime(2025, 5, 16, 15, 44, 35, 426, DateTimeKind.Local).AddTicks(919),
+                            CreatedAt = new DateTime(2025, 5, 16, 21, 54, 43, 777, DateTimeKind.Local).AddTicks(509),
                             EndTime = new TimeSpan(0, 12, 0, 0, 0),
                             IsActive = true,
                             ScheduleName = "Morning Cooling",
@@ -170,6 +170,10 @@ namespace Persistance.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("DeviceId")
                         .HasColumnType("int");
@@ -189,12 +193,14 @@ namespace Persistance.Migrations
                         new
                         {
                             Id = 1,
+                            AccessToken = "Tokken01",
                             DeviceId = 1,
                             ScheduleId = 1
                         },
                         new
                         {
                             Id = 2,
+                            AccessToken = "Tokken02",
                             DeviceId = 2,
                             ScheduleId = 1
                         });

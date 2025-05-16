@@ -92,8 +92,8 @@ namespace Persistance.Data
 
             // Seed ScheduleDevice
             modelBuilder.Entity<ScheduleDevice>().HasData(
-                new ScheduleDevice { Id = 1, ScheduleId = 1, DeviceId = 1 },
-                new ScheduleDevice { Id = 2, ScheduleId = 1, DeviceId = 2 }
+                new ScheduleDevice { Id = 1, ScheduleId = 1, DeviceId = 1,  AccessToken="Tokken01" },
+                new ScheduleDevice { Id = 2, ScheduleId = 1, DeviceId = 2 , AccessToken = "Tokken02" }
             );
 
             // Seed ScheduleDeviceAttributes

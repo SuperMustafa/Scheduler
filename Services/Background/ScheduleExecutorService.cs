@@ -1,97 +1,116 @@
 ﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
-using System;
-using Persistance.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using Domain.Models;
-using System.Text.Json.Serialization;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Persistance.Data;
 
-namespace Services.Background
+public class ScheduleExecutorService : BackgroundService
 {
-    public class ScheduleExecutorService : BackgroundService
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<ScheduleExecutorService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
+
+    public ScheduleExecutorService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<ScheduleExecutorService> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration)
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<ScheduleExecutorService> _logger;
-        private readonly HttpClient _httpClient;
-        public ScheduleExecutorService(IServiceProvider serviceProvider, ILogger<ScheduleExecutorService> logger)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-            _httpClient = new HttpClient();
-        }
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
+    }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            _logger.LogInformation("Scheduler started");
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("ScheduleExecutorService started.");
 
-            while (!stoppingToken.IsCancellationRequested)
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
+
+            var dueSchedules = await dbContext.Schedules
+                .Where(s => s.StartTime <= DateTime.Now.TimeOfDay && !s.IsActive)
+                .ToListAsync(stoppingToken);
+
+            foreach (var schedule in dueSchedules)
             {
                 try
                 {
-                    using var scope = _serviceProvider.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<SchedulerDbContext>();
+                    var success = await SendAttributeToThingsBoardAsync(schedule);
 
-                    var now = DateTime.Now;
-                    var currentTime = now.TimeOfDay;
-                    var today = now.DayOfWeek.ToString();
-
-                    var schedules = await db.Schedules
-                        .Where(s => s.IsActive && s.SelectedDays.Contains(today)
-                                    && s.StartTime.Hours == currentTime.Hours
-                                    && s.StartTime.Minutes == currentTime.Minutes)
-                        .Include(s => s.ScheduleDevices)
-                            .ThenInclude(sd => sd.Device)
-                        .Include(s => s.ScheduleDevices)
-                            .ThenInclude(sd => sd.Attributes)
-                        .ToListAsync();
-
-                    foreach (var schedule in schedules)
+                    if (success)
                     {
-                        foreach (var scheduleDevice in schedule.ScheduleDevices)
-                        {
-                            var device = scheduleDevice.Device;
-                            var attributes = scheduleDevice.Attributes.ToDictionary(a => a.AttributeKey, a => (object)a.AttributeValue);
-
-                            // Send to ThingsBoard REST API
-                            var token = device.AccessToken; // Make sure AccessToken is a property
-                            var url = $"http://localhost:8080/api/v1/{token}/attributes"; // Adjust host if needed
-
-                            var response = await _httpClient.PostAsJsonAsync(url, attributes, stoppingToken);
-
-                            if (response.IsSuccessStatusCode)
-                            {
-                                _logger.LogInformation($"Updated device {device.UnitName} for schedule {schedule.ScheduleName}");
-                            }
-
-                            else
-                            {
-                                _logger.LogWarning($"Failed to update device {device.UnitName}: {response.StatusCode}");
-                            }
-
-                            var log = new ScheduleExecutionLog
-                            {
-                                ScheduleId = schedule.Id,
-                                DeviceName = device.UnitName,
-                                AttributesSent = JsonConvert.SerializeObject(attributes),
-                                SentAt = DateTime.Now
-                            };
-
-                            db.ScheduleExecutionLogs.Add(log);
-                            await db.SaveChangesAsync();
-                        }
+                        schedule.IsActive = true;
+                        _logger.LogInformation($"Executed schedule ID {schedule.Id} for device {schedule.ScheduleDevices.Select(sd=>sd.DeviceId)}.");
                     }
-
-                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // Wait for 1 min
+                    else
+                    {
+                        _logger.LogWarning($"Failed to send attribute for schedule ID {schedule.Id}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error executing schedule");
-                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken); // Wait before retry
+                    _logger.LogError(ex, $"Error executing schedule ID {schedule.Id}");
                 }
             }
+
+            await dbContext.SaveChangesAsync(stoppingToken);
+
+            await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken); // Run every 30 seconds
         }
     }
+
+    private async Task<bool> SendAttributeToThingsBoardAsync(Schedule schedule)
+    {
+        var thingsBoardBaseUrl = _configuration["ThingsBoard:BaseUrl"];
+        var jwtToken = _configuration["ThingsBoard:JwtToken"];
+
+        var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwtToken);
+
+        bool allSuccess = true;
+
+        foreach (var device in schedule.ScheduleDevices)
+        {
+            if (string.IsNullOrWhiteSpace(device.AccessToken))
+            {
+                _logger.LogWarning($"Device {device.DeviceId} has no access token, skipping.");
+                continue;
+            }
+
+            var attributesDict = device.Attributes.ToDictionary(attr => attr.AttributeKey, attr => attr.AttributeValue);
+
+            if (attributesDict.Count == 0)
+                continue;  // Skip devices with no attributes
+
+            var url = $"{thingsBoardBaseUrl}/api/v1/{device.AccessToken}/attributes";
+
+            var content = new StringContent(JsonSerializer.Serialize(attributesDict), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                allSuccess = false;
+                _logger.LogError($"Failed to send attributes to device {device.DeviceId} ({device.AccessToken}): {response.StatusCode}");
+            }
+            else
+            {
+                _logger.LogInformation($"Successfully sent attributes to device {device.DeviceId} ({device.AccessToken})");
+            }
+        }
+
+        return allSuccess;
+    }
+
+
 }
